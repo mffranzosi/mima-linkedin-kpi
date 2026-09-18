@@ -255,16 +255,9 @@ function svgText(parent, x, y, txt, attrs={}) {
 
 // Rounds a data max up to a "nice" axis max (1/2/2.5/5 x 10^n) so gridlines read as round numbers.
 function niceMax(v) {
-  if (v <= 0) return 1;
-  const exp = Math.floor(Math.log10(v));
-  const base = v / Math.pow(10, exp);
-  let niceBase;
-  if (base <= 1) niceBase = 1;
-  else if (base <= 2) niceBase = 2;
-  else if (base <= 2.5) niceBase = 2.5;
-  else if (base <= 5) niceBase = 5;
-  else niceBase = 10;
-  return niceBase * Math.pow(10, exp);
+  // 5 gridline intervals with a round integer step (1/2/5 x 10^n): 0/500/1000 style, never 0/448/896.
+  for (let k = 0; k < 12; k++) for (const m of [1,2,5]) { const step = m*Math.pow(10,k); if (step*5 >= v) return step*5; }
+  return v;
 }
 
 function drawLine(svgId, labels, vals, color, viewW=500, viewH=180, padL=40, padR=10, padT=15, padB=40) {
@@ -275,7 +268,7 @@ function drawLine(svgId, labels, vals, color, viewW=500, viewH=180, padL=40, pad
   const max = niceMax(Math.max(...vals, 1));
   const xS = i => padL + i/(Math.max(labels.length-1,1))*cW;
   const yS = v => padT + (1 - v/max)*cH;
-  [0,0.25,0.5,0.75,1].forEach(f => {
+  [0,0.2,0.4,0.6,0.8,1].forEach(f => {
     const y = padT + (1-f)*cH;
     el('line',{x1:padL,y1:y,x2:viewW-padR,y2:y,stroke:'#e4e7ed','stroke-width':'0.7'},svg);
     svgText(svg, padL-4, y+4, Math.round(f*max), {'font-size':'9','fill':'#8990a8','text-anchor':'end'});
@@ -296,7 +289,7 @@ function drawLine(svgId, labels, vals, color, viewW=500, viewH=180, padL=40, pad
   const step = Math.ceil(labels.length/10);
   labels.forEach((l,i) => {
     if (i % step !== 0 && i !== labels.length-1) return;
-    svgText(svg, xS(i), viewH-5, l, {'font-size':'9','fill':'#8990a8','text-anchor':'middle'});
+    svgText(svg, xS(i), viewH-5, l, {'font-size':'9','fill':'#8990a8','text-anchor': i===labels.length-1 && i>0 ? 'end' : 'middle'});
   });
 }
 
@@ -309,7 +302,7 @@ function drawBars(svgId, labels, vals, colorFn, viewW=500, viewH=180, padL=40, p
   if (!vals.length) return;
   const bW = cW/vals.length*0.7;
   const gap = cW/vals.length;
-  [0,0.5,1].forEach(f => {
+  [0,0.2,0.4,0.6,0.8,1].forEach(f => {
     const y = padT + (1-f)*cH;
     el('line',{x1:padL,y1:y,x2:viewW-padR,y2:y,stroke:'#e4e7ed','stroke-width':'0.7'},svg);
     svgText(svg, padL-4, y+4, Math.round(f*max), {'font-size':'9','fill':'#8990a8','text-anchor':'end'});
@@ -474,7 +467,7 @@ function renderFollowers() {
   const senLbls = follSenSorted.map(x=>x[0]), senVals = follSenSorted.map(x=>x[1]);
   drawHBar('svg-foll-sen', senLbls, senVals, (i,l) => DECISION_MAKERS.some(d=>l.includes(d))?'#0057B8':'#6b3fa0');
   const indTop = DATA.follInd.slice(0,10);
-  drawBars('svg-foll-ind', indTop.map(x=>x[0]), indTop.map(x=>x[1]), ()=>'#6b3fa0', 1000, 260, 32, 10, 15, 130, true);
+  drawBars('svg-foll-ind', indTop.map(x=>x[0]), indTop.map(x=>x[1]), ()=>'#6b3fa0', 1000, 260, 40, 10, 15, 130, true);
 
   document.getElementById('k2-toploc').textContent = DATA.follLoc[0] ? DATA.follLoc[0][0] : '-';
   document.getElementById('k2-topsen').textContent = DATA.follSen[0] ? DATA.follSen[0][0] : '-';
@@ -551,7 +544,7 @@ function renderTab2Visitors() {
   drawHBar('svg-sen', senLbls, senVals, (i,l) => DECISION_MAKERS.some(d=>l.includes(d))?'#0057B8':'#6b3fa0');
 
   const jobTop = aud.job.slice(0,8);
-  drawBars('svg-job', jobTop.map(x=>x[0]), jobTop.map(x=>x[1]), (i)=>i<2?'#0057B8':'#6b3fa0', 500, 260, 32, 10, 15, 130, true);
+  drawBars('svg-job', jobTop.map(x=>x[0]), jobTop.map(x=>x[1]), (i)=>i<2?'#0057B8':'#6b3fa0', 500, 260, 40, 10, 15, 130, true);
 
   const sizeOrder = ['1','2-10','11-50','51-200','201-500','501-1000','1001-5000','5001-10000','10001+'];
   const sizeSorted = [...aud.size].sort((a,b)=>sizeOrder.indexOf(a[0])-sizeOrder.indexOf(b[0]));
